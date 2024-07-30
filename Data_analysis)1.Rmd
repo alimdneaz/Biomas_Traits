@@ -1,0 +1,242 @@
+---
+title: "Data Analysis Biomas Traits"
+author: "Md Neaz Ali"
+date: "2024-07-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data and Library Import
+```{r message=FALSE}
+library(agricolae)
+library(dendextend)
+library(dplyr)
+library(ggplot2)
+library(pheatmap)
+library(metan)
+library(stats)
+library(MASS)
+library(factoextra)
+library(gridExtra)
+library(gt)
+library(psych)
+library(ggdendro)
+library(tidyverse)
+```
+## Importing Data
+```{r}
+mva_data <- read.csv("./data/mva.csv",header = TRUE)
+anova_data <- read.csv("./data/anova.csv", header = TRUE)
+# initial_data <- read.csv("./data/initial.csv, header = TRUE")
+boxplot_data <- read.csv("./data/boxplot.csv", header = TRUE)
+```
+
+# ANOVA
+```{r}
+anova_data %>% 
+  str()
+anova_data$Rep <- as.factor(anova_data$Rep)
+anova_data$Treat <- as.factor(anova_data$Treat)
+anova_data$Geno <- as.factor(anova_data$Geno)
+anova_data %>% 
+  str()
+```
+## Summary
+```{r}
+summary(anova_data[,-c(1,2,3)])
+```
+## Standard Deviations
+```{r}
+variables <- names(anova_data)
+for(i in 4:11){
+  output <- paste0(variables[i]," : ", sd(anova_data[,i]) %>% round(3))
+  print(output)
+}
+```
+## anova
+```{r}
+variables <- names(anova_data)
+variables <- variables[4:11]
+for(var in variables){
+  print(paste0("Anova for: ", var))
+  formula <- as.formula(paste(var, "~Rep+Treat+Geno"))
+  model <- aov(formula, data = anova_data)
+  print("anova result : ------------------------")
+  print(summary(model))
+  
+  # LSD Test
+  print("LSD  Treatment ------------------")
+  print(LSD.test(model, "Treat", p.adj = "none"))
+  print("LSD Geno ----------------------")
+  print(LSD.test(model, "Geno"))
+  print("Rep ---------------")
+  print(LSD.test(model, "Rep"))
+  # Duncan's Test
+  print("Duncan's Treatment -------------------")
+  print(duncan.test(model, 'Treat'))
+  print("Duncanc Geno -----------------")
+  print(duncan.test(model, "Geno"))
+  print("Duncan Rep --------------")
+  print(duncan.test(model, "Rep"))
+  # HSD Test
+  print("HSD Test Reatment --------------------")
+  print(HSD.test(model, "Treat"))
+  print("HSD Geno ---------------------")
+  print(HSD.test(model, "Geno"))
+  print("HSD Rep ----------------")
+  print(HSD.test(model, "Rep"))
+}
+```
+
+
+# Boxplots
+
+```{r}
+path <- getwd()
+output_dir <- paste0(path, "/images/boxplots/")
+if(!dir.exists(output_dir)){
+  dir.create(output_dir, recursive = TRUE)
+}
+for(var in variables){
+  formula <- as.formula(paste0(var ,"~ Treat"))
+  print(paste("Boxplot for : ", var))
+  file_name_box <- paste0(output_dir,var ,".png")
+  jpeg(filename = file_name_box, width = 900, height = 600, quality = 600)
+  par(mar = c(5,4,4,2)+0.3)
+  boxplot(formula, col = 5, data = anova_data)
+  dev.off()
+}
+```
+
+# PCA 
+```{r}
+mva_data %>% 
+  head()
+```
+```{r}
+mva_data %>% 
+  str()
+```
+```{r}
+mva_data$Rep <- as.factor(mva_data$Rep)
+mva_data$Geno <- as.factor(mva_data$Geno)
+```
+
+### pca calculations
+```{r}
+pca <- prcomp(mva_data[,-c(1,2)], center = TRUE, scale = TRUE)
+print(summary(pca))
+```
+```{r}
+print(names(pca))
+```
+
+```{r}
+pca$rotation
+```
+
+```{r}
+pca$x
+```
+```{r}
+principal_comps <- pca$x
+correlations <- cor(mva_data[,-c(1,2)], principal_comps)
+print(correlations)
+```
+### Scree Plot of Variance
+```{r}
+eigenvalues <- pca$sdev^2
+explained_variance <- eigenvalues/sum(eigenvalues)*100
+
+scree_data <- data.frame(
+  PC = paste0("PC", 1:length(explained_variance)),
+  variance = explained_variance
+)
+
+hline_value = 3
+scree_plot <- ggplot(scree_data, aes(x = PC, y = variance))+
+  geom_bar(stat = "identity", fill = "skyblue")+
+  geom_text(aes(label = round(variance,1)), vjust = -0.5)+
+  geom_line(aes(x = 1:length(pca$sdev),y = pca$sdev^2/sum(pca$sdev^2)*100),color = "blue", size =1 )+
+  geom_hline(yintercept = hline_value,linetype = "dashed", color = "red",lwd = 1)+
+  xlab("Principal Component")+
+  ylab("Percentage of variance Explained")+
+  ggtitle("Scree Plot")
+scree_plot
+```
+### Biplot
+```{r}
+biplot <- fviz_pca_biplot(pca,
+                          geom.ind = "point",
+                          pointshape = 21,
+                          pointsize = 2,
+                          fill.ind = mva_data$Geno,
+                          col.ind = "black",
+                          col.var = "blue",
+                          legend.title = "Genotypes",
+                          repel = TRUE)
+biplot <- biplot +
+  geom_point(aes(x = pca$x[,1], y = pca$x[,2], shape = mva_data$Geno, color= mva_data$Geno), size=2, stroke = 1.5)
+biplot
+```
+
+# Clustering
+### Dendogram
+
+```{r}
+# Step 1: Prepare the Data
+clust_data <- mva_data[, -1]
+
+# Step 2: Aggregate Data by Genotype
+clust_data_agg <- clust_data %>%
+  group_by(Geno) %>%
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+
+# Step 3: Standardize the Numerical Data  
+clust_data_scaled <- clust_data_agg %>%
+  mutate(across(where(is.numeric), scale))
+
+# Step 4: Calculate the Distance Matrix
+dist_matrix <- dist(clust_data_scaled, method = "euclidean")
+
+# Step 5: Perform Hierarchical Clustering
+hc <- hclust(dist_matrix)
+
+# Step 6: Convert to dendrogram data
+dendro_data <- ggdendro::dendro_data(hc)
+
+# Create the dendrogram plot
+dendrogram_plot <- ggplot(width = 12) +  # Adjust the width of the plot
+  geom_segment(data = dendro_data$segments, aes(x = x, y = y, xend = xend, yend = yend), size = 1, color = "steelblue") +
+  geom_text(data = dendro_data$labels, aes(x = x, y = y, label = label), hjust = -0.1, size = 3) +
+  geom_hline(yintercept = 8, linetype = "dashed", color = "blue", size = .4)+
+  theme_minimal() +
+  labs(title = "Dendrogram Based on Genotypes and Measurements", x = "", y = "Height") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+ggsave("./images/dendogram/dendogram_plot.png", plot = dendrogram_plot, width = 12, height = 8, dpi = 600)
+dendrogram_plot
+```
+### Cluster Members
+```{r}
+clust_data <- mva_data[, -1]
+clust_data_agg <- clust_data %>% 
+  group_by(Geno) %>% 
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+clust_data_scaled <- clust_data_agg %>%
+  mutate(across(where(is.numeric), scale))
+
+dist_matrix <- dist(clust_data_scaled, method = "euclidean")
+hc <- hclust(dist_matrix)
+num_clusters <- 4
+cluster_membership <- cutree(hc, k = num_clusters)
+clust_data_agg <- clust_data_agg %>%
+  mutate(Cluster = cluster_membership)
+
+table(clust_data_agg$Geno, clust_data_agg$Cluster)
+```
+
+
