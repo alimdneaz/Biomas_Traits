@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Data and Library Import
-```{r message=FALSE}
+```{r message=FALSE, error=FALSE}
 library(agricolae)
 library(dendextend)
 library(dplyr)
@@ -93,22 +93,61 @@ for(var in variables){
 
 
 # Boxplots
+```{r}
+box_data <- read.csv("./data/Boxplot_edited2.csv", header = T)
+str(box_data)
+```
+```{r}
+box_data$Geno <- as.factor(box_data$Geno)
+box_data$Rep <- as.factor(box_data$Rep)
+box_data$Treat <- as.factor(box_data$Treat)
+```
+
 
 ```{r}
+variables <- names(box_data)[4:11]
 path <- getwd()
 output_dir <- paste0(path, "/images/boxplots/")
 if(!dir.exists(output_dir)){
   dir.create(output_dir, recursive = TRUE)
 }
+```
+
 for(var in variables){
   formula <- as.formula(paste0(var ,"~ Treat"))
   print(paste("Boxplot for : ", var))
   file_name_box <- paste0(output_dir,var ,".png")
   jpeg(filename = file_name_box, width = 900, height = 600, quality = 600)
   par(mar = c(5,4,4,2)+0.3)
-  boxplot(formula, col = 5, data = anova_data)
+  boxplot(formula, col = 5, data = box_data)
   dev.off()
+  boxplot(formula, col = 5, data = box_data)
 }
+
+
+```{r}
+for (var in variables) {
+  formula <- as.formula(paste0(var, " ~ Treat"))
+  print(paste("Boxplot for: ", var))
+  
+  p <- ggplot(box_data, aes_string(x = "Treat", y = var)) +
+    geom_boxplot(fill = "#8cbf13", color = "black", outlier.color = "red", outlier.shape = 16, outlier.size = 2) +
+    labs(x = " ", y = var) +
+    theme_minimal(base_size = 15) +  # Use a minimal theme with larger base font size
+    theme(
+      axis.text.x = element_text(hjust = 1), 
+      panel.background = element_rect(fill = "white"),
+      plot.background = element_rect(fill = "white"),  
+      panel.grid.major = element_blank(),  
+      panel.grid.minor = element_blank()  
+    )
+  
+ 
+  file_name_box <- paste0(output_dir, var, ".png")
+  ggsave(file_name_box, plot = p, width = 9, height = 6, dpi = 300)
+  p
+}
+
 ```
 
 # PCA 
@@ -146,6 +185,8 @@ principal_comps <- pca$x
 correlations <- cor(mva_data[,-c(1,2)], principal_comps)
 print(correlations)
 ```
+
+
 ### Scree Plot of Variance
 ```{r}
 eigenvalues <- pca$sdev^2
@@ -158,13 +199,14 @@ scree_data <- data.frame(
 
 hline_value = 3
 scree_plot <- ggplot(scree_data, aes(x = PC, y = variance))+
-  geom_bar(stat = "identity", fill = "skyblue")+
+  geom_bar(stat = "identity", fill = "#8cbf13")+
   geom_text(aes(label = round(variance,1)), vjust = -0.5)+
-  geom_line(aes(x = 1:length(pca$sdev),y = pca$sdev^2/sum(pca$sdev^2)*100),color = "blue", size =1 )+
-  geom_hline(yintercept = hline_value,linetype = "dashed", color = "red",lwd = 1)+
+  geom_line(aes(x = 1:length(pca$sdev),y = pca$sdev^2/sum(pca$sdev^2)*100),color = "blue", size =0.4 )+
+  geom_hline(yintercept = hline_value,linetype = "dashed", color = "red",lwd = 0.4)+
   xlab("Principal Component")+
   ylab("Percentage of variance Explained")+
   ggtitle("Scree Plot")
+ggsave("./images/scree_plot/scree_plot.png", scree_plot,width = 12, height = 8, dpi = 600)
 scree_plot
 ```
 ### Biplot
@@ -210,16 +252,18 @@ dendro_data <- ggdendro::dendro_data(hc)
 
 # Create the dendrogram plot
 dendrogram_plot <- ggplot(width = 12) +  # Adjust the width of the plot
-  geom_segment(data = dendro_data$segments, aes(x = x, y = y, xend = xend, yend = yend), size = 1, color = "steelblue") +
+  geom_segment(data = dendro_data$segments, aes(x = x, y = y, xend = xend, yend = yend), size = .4, color = "#8cbf13") +
   geom_text(data = dendro_data$labels, aes(x = x, y = y, label = label), hjust = -0.1, size = 3) +
-  geom_hline(yintercept = 8, linetype = "dashed", color = "blue", size = .4)+
+  geom_hline(yintercept = 8, linetype = "dashed", color = "blue", size = .3)+
   theme_minimal() +
-  labs(title = "Dendrogram Based on Genotypes and Measurements", x = "", y = "Height") +
+  labs(title = "Dendrogram Using Agglomerative Clustering Method", x = "", y = "Height") +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
 ggsave("./images/dendogram/dendogram_plot.png", plot = dendrogram_plot, width = 12, height = 8, dpi = 600)
 dendrogram_plot
 ```
+
+
 ### Cluster Members
 ```{r}
 clust_data <- mva_data[, -1]
