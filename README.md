@@ -48,10 +48,20 @@ The analysis involves the following steps:
 
 The analysis is conducted using R, with the following key packages:
 
-- `tidyverse`: For data manipulation and visualization.
-- `ggplot2`: For creating plots and visualizations.
-- `ggdendro`: For visualizing hierarchical clustering results.
-
+- library(agricolae)
+- library(dendextend)
+- library(dplyr)
+- library(ggplot2)
+- library(pheatmap)
+- library(metan)
+- library(stats)
+- library(MASS)
+- library(factoextra)
+- library(gridExtra)
+- library(gt)
+- library(psych)
+- library(ggdendro)
+- library(tidyverse)
 ## Results
 
 The results of the analysis will be presented in the form of visualizations and statistical summaries. Key findings will include:
