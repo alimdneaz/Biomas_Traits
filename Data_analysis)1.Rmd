@@ -66,28 +66,6 @@ for(var in variables){
   model <- aov(formula, data = anova_data)
   print("anova result : ------------------------")
   print(summary(model))
-  
-  # LSD Test
-  print("LSD  Treatment ------------------")
-  print(LSD.test(model, "Treat", p.adj = "none"))
-  print("LSD Geno ----------------------")
-  print(LSD.test(model, "Geno"))
-  print("Rep ---------------")
-  print(LSD.test(model, "Rep"))
-  # Duncan's Test
-  print("Duncan's Treatment -------------------")
-  print(duncan.test(model, 'Treat'))
-  print("Duncanc Geno -----------------")
-  print(duncan.test(model, "Geno"))
-  print("Duncan Rep --------------")
-  print(duncan.test(model, "Rep"))
-  # HSD Test
-  print("HSD Test Reatment --------------------")
-  print(HSD.test(model, "Treat"))
-  print("HSD Geno ---------------------")
-  print(HSD.test(model, "Geno"))
-  print("HSD Rep ----------------")
-  print(HSD.test(model, "Rep"))
 }
 ```
 
