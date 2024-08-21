@@ -320,3 +320,69 @@ sink("linextesteroutput.txt")
 sink()
 ```
 
+# GV, AV, DV etc
+```{r}
+gvdat <- read.csv("./data/GV_data.csv")
+gvdat %>% head()
+```
+```{r}
+str(gvdat)
+```
+
+
+```{r}
+df <- gvdat$df
+Source <- gvdat$Source
+rownames(gvdat) <- Source
+gvdat <- gvdat[,-c(1,2)]
+gvdat %>%  head()
+```
+```{r}
+head(anova_data)
+```
+```{r}
+means <- data.frame(Criterias = c("LN", "Rl",	"SL",	"LA",	"SDW",	"RDW",	"LDW",	"TDM" ), 
+           means = c(6.38,	14.82,	8.318,	52.4,	0.05568,	0.04149,	0.1254,	0.2226))
+```
+
+
+```{r}
+GV <- (gvdat["Treatment",] - gvdat["Error",])/4
+GV
+```
+
+```{r}
+EV <- gvdat["Error",]
+EV
+```
+
+```{r}
+PV <- GV + EV
+PV
+```
+```{r}
+GCV <- (GV/means$means) * 100
+GCV
+```
+```{r}
+PCV <- (PV/means$means) * 100
+PCV
+```
+```{r}
+H.broad_sense <- GV/ PV
+H.broad_sense
+```
+```{r}
+H.percent <-  H.broad_sense * 100
+H.percent
+```
+```{r}
+GA <- (H.broad_sense^2) * 2.06 * sqrt(PV)
+GA
+```
+
+
+
+
+
+
