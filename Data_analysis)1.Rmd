@@ -25,6 +25,8 @@ library(gt)
 library(psych)
 library(ggdendro)
 library(tidyverse)
+library(lme4)
+library(lsmeans)
 ```
 ## Importing Data
 ```{r}
@@ -261,4 +263,60 @@ clust_data_agg <- clust_data_agg %>%
 table(clust_data_agg$Geno, clust_data_agg$Cluster)
 ```
 
+```{r}
+clust_data_agg$Cluster <- as.factor(clust_data_agg$Cluster)
+head(clust_data_agg)
+```
+
+# Mean values of four clusters based on quantitative traits
+```{r}
+groups <- c(1,2,3,4)
+for(i in groups){
+  summ <- clust_data_agg[,-1] %>% 
+            filter(Cluster == i) %>% 
+            summary()
+  print(paste0("Summary of Cluster number: ",i))
+  print(summ)
+}
+```
+
+
+# Line Tester Mating 
+```{r}
+head(anova_data)
+```
+```{r}
+model <- lmer(LN~Geno+(1|Rep)+(1|Geno:Rep),data = anova_data)
+```
+```{r}
+summary(model)
+```
+```{r}
+VarCorr(model)
+```
+Prdicting the values
+```{r}
+predicted <- predict(model)
+anova_data$predicted <- predicted
+```
+
+GCA and SCA Calculation
+```{r}
+gca <- anova_data %>% 
+  group_by(Geno) %>% 
+  summarise(GCA = mean(predicted))
+sca <- anova_data %>% 
+  group_by()
+```
+
+
+```{r}
+lsm <- lsmeans(model, ~Geno)
+summary(lsm)
+```
+```{r}
+sink("linextesteroutput.txt")
+# with(anova_data,lineXtester(Rep, Geno, LN))
+sink()
+```
 

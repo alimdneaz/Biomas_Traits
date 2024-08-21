@@ -372,7 +372,9 @@ library(gridExtra)
 library(gt)
 library(psych)
 library(ggdendro)
-library(tidyverse)</code></pre>
+library(tidyverse)
+library(lme4)
+library(lsmeans)</code></pre>
 <div id="importing-data" class="section level2">
 <h2>Importing Data</h2>
 <pre class="r"><code>mva_data &lt;- read.csv(&quot;./data/mva.csv&quot;,header = TRUE)
@@ -1018,7 +1020,199 @@ table(clust_data_agg$Geno, clust_data_agg$Cluster)</code></pre>
 ##   22 0 0 0 1
 ##   23 0 0 0 1
 ##   24 0 0 0 1</code></pre>
+<pre class="r"><code>clust_data_agg$Cluster &lt;- as.factor(clust_data_agg$Cluster)
+head(clust_data_agg)</code></pre>
+<pre><code>## # A tibble: 6 × 10
+##   Geno     LN    RL    SL    LA   SDW   RDW   LDW   TDW Cluster
+##   &lt;fct&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt;  
+## 1 1      5.88  19.1  6.88  55.3 0     0.05  0.15  0.25  1      
+## 2 2      5.12  14.8  7.5   41.2 0     0     0.1   0.2   1      
+## 3 3      5.62  17.6  6.75  47.9 0     0.05  0.1   0.175 1      
+## 4 4      5.88  15.8  5.5   57.6 0.025 0.05  0.125 0.225 1      
+## 5 5      5.12  14.9  7.12  30.9 0     0     0.1   0.175 1      
+## 6 6      5.38  17.4  8.12  72.7 0.025 0.025 0.125 0.225 2</code></pre>
 </div>
+</div>
+<div id="mean-values-of-four-clusters-based-on-quantitative-traits" class="section level1">
+<h1>Mean values of four clusters based on quantitative traits</h1>
+<pre class="r"><code>groups &lt;- c(1,2,3,4)
+for(i in groups){
+  summ &lt;- clust_data_agg[,-1] %&gt;% 
+            filter(Cluster == i) %&gt;% 
+            summary()
+  print(paste0(&quot;Summary of Cluster number: &quot;,i))
+  print(summ)
+}</code></pre>
+<pre><code>## [1] &quot;Summary of Cluster number: 1&quot;
+##        LN              RL              SL              LA       
+##  Min.   :5.125   Min.   :14.82   Min.   :5.500   Min.   :30.90  
+##  1st Qu.:5.125   1st Qu.:14.88   1st Qu.:6.750   1st Qu.:41.23  
+##  Median :5.625   Median :15.75   Median :6.875   Median :47.92  
+##  Mean   :5.525   Mean   :16.43   Mean   :6.750   Mean   :46.59  
+##  3rd Qu.:5.875   3rd Qu.:17.62   3rd Qu.:7.125   3rd Qu.:55.30  
+##  Max.   :5.875   Max.   :19.07   Max.   :7.500   Max.   :57.58  
+##       SDW             RDW            LDW             TDW        Cluster
+##  Min.   :0.000   Min.   :0.00   Min.   :0.100   Min.   :0.175   1:5    
+##  1st Qu.:0.000   1st Qu.:0.00   1st Qu.:0.100   1st Qu.:0.175   2:0    
+##  Median :0.000   Median :0.05   Median :0.100   Median :0.200   3:0    
+##  Mean   :0.005   Mean   :0.03   Mean   :0.115   Mean   :0.205   4:0    
+##  3rd Qu.:0.000   3rd Qu.:0.05   3rd Qu.:0.125   3rd Qu.:0.225          
+##  Max.   :0.025   Max.   :0.05   Max.   :0.150   Max.   :0.250          
+## [1] &quot;Summary of Cluster number: 2&quot;
+##        LN              RL              SL               LA       
+##  Min.   :4.875   Min.   :14.38   Min.   : 6.625   Min.   :39.48  
+##  1st Qu.:5.375   1st Qu.:15.69   1st Qu.: 7.750   1st Qu.:56.38  
+##  Median :5.438   Median :17.38   Median : 8.312   Median :69.06  
+##  Mean   :5.521   Mean   :16.60   Mean   : 8.333   Mean   :64.09  
+##  3rd Qu.:5.781   3rd Qu.:17.56   3rd Qu.: 8.875   3rd Qu.:75.65  
+##  Max.   :6.125   Max.   :17.75   Max.   :10.125   Max.   :76.95  
+##       SDW               RDW               LDW              TDW         Cluster
+##  Min.   :0.00000   Min.   :0.00000   Min.   :0.1000   Min.   :0.1250   1:0    
+##  1st Qu.:0.00625   1st Qu.:0.02500   1st Qu.:0.1313   1st Qu.:0.2062   2:6    
+##  Median :0.02500   Median :0.02500   Median :0.1500   Median :0.2500   3:0    
+##  Mean   :0.05000   Mean   :0.03750   Mean   :0.1500   Mean   :0.2583   4:0    
+##  3rd Qu.:0.06250   3rd Qu.:0.04375   3rd Qu.:0.1688   3rd Qu.:0.2938          
+##  Max.   :0.17500   Max.   :0.10000   Max.   :0.2000   Max.   :0.4250          
+## [1] &quot;Summary of Cluster number: 3&quot;
+##        LN              RL              SL              LA       
+##  Min.   :4.625   Min.   :10.25   Min.   :7.000   Min.   :18.38  
+##  1st Qu.:5.750   1st Qu.:12.71   1st Qu.:7.344   1st Qu.:23.64  
+##  Median :6.188   Median :14.66   Median :7.750   Median :39.61  
+##  Mean   :6.083   Mean   :13.79   Mean   :7.938   Mean   :39.55  
+##  3rd Qu.:6.719   3rd Qu.:15.29   3rd Qu.:8.062   3rd Qu.:48.69  
+##  Max.   :7.000   Max.   :15.62   Max.   :9.750   Max.   :69.70  
+##       SDW               RDW               LDW               TDW         Cluster
+##  Min.   :0.00000   Min.   :0.00000   Min.   :0.07500   Min.   :0.1000   1:0    
+##  1st Qu.:0.00000   1st Qu.:0.00000   1st Qu.:0.08125   1st Qu.:0.1812   2:0    
+##  Median :0.01250   Median :0.02500   Median :0.10000   Median :0.2000   3:6    
+##  Mean   :0.02500   Mean   :0.03333   Mean   :0.10833   Mean   :0.2000   4:0    
+##  3rd Qu.:0.04375   3rd Qu.:0.05000   3rd Qu.:0.11875   3rd Qu.:0.2188          
+##  Max.   :0.07500   Max.   :0.10000   Max.   :0.17500   Max.   :0.3000          
+## [1] &quot;Summary of Cluster number: 4&quot;
+##        LN              RL              SL               LA       
+##  Min.   :7.250   Min.   :11.12   Min.   : 6.625   Min.   :33.27  
+##  1st Qu.:7.750   1st Qu.:11.85   1st Qu.: 7.750   1st Qu.:45.89  
+##  Median :7.875   Median :12.88   Median : 9.375   Median :52.73  
+##  Mean   :7.982   Mean   :13.05   Mean   : 9.750   Mean   :57.57  
+##  3rd Qu.:8.312   3rd Qu.:13.69   3rd Qu.:10.688   3rd Qu.:71.34  
+##  Max.   :8.625   Max.   :16.25   Max.   :15.375   Max.   :82.55  
+##       SDW               RDW               LDW              TDW         Cluster
+##  Min.   :0.05000   Min.   :0.00000   Min.   :0.1000   Min.   :0.1250   1:0    
+##  1st Qu.:0.06250   1st Qu.:0.00000   1st Qu.:0.1000   1st Qu.:0.2125   2:0    
+##  Median :0.07500   Median :0.00000   Median :0.1000   Median :0.2750   3:0    
+##  Mean   :0.08571   Mean   :0.01071   Mean   :0.1321   Mean   :0.2357   4:7    
+##  3rd Qu.:0.10000   3rd Qu.:0.01250   3rd Qu.:0.1625   3rd Qu.:0.2750          
+##  Max.   :0.15000   Max.   :0.05000   Max.   :0.2000   Max.   :0.2750</code></pre>
+</div>
+<div id="line-tester-mating" class="section level1">
+<h1>Line Tester Mating</h1>
+<pre class="r"><code>head(anova_data)</code></pre>
+<pre><code>##   Rep Treat Geno LN   RL SL    LA   SDW   RDW    LDW    TDW
+## 1   1     1    1  5 19.0 10 42.63 0.020 0.031 0.1260 0.1770
+## 2   2     1    1  7 21.0  9 45.34 0.062 0.111 0.3030 0.4760
+## 3   3     1    1  6 14.5 10 45.48 0.030 0.031 0.0125 0.0735
+## 4   4     1    1  7 16.0  8 70.81 0.032 0.085 0.1840 0.3010
+## 5   1     1    2  6 17.5 11 35.58 0.028 0.027 0.1020 0.1570
+## 6   2     1    2  5 15.0 10 49.60 0.047 0.056 0.1540 0.2570</code></pre>
+<pre class="r"><code>model &lt;- lmer(LN~Geno+(1|Rep)+(1|Geno:Rep),data = anova_data)</code></pre>
+<pre><code>## boundary (singular) fit: see help(&#39;isSingular&#39;)</code></pre>
+<pre class="r"><code>summary(model)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: LN ~ Geno + (1 | Rep) + (1 | Geno:Rep)
+##    Data: anova_data
+## 
+## REML criterion at convergence: 582.3
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.6370 -0.5826  0.0289  0.5700  3.4343 
+## 
+## Random effects:
+##  Groups   Name        Variance Std.Dev.
+##  Geno:Rep (Intercept) 0.00000  0.0000  
+##  Rep      (Intercept) 0.01969  0.1403  
+##  Residual             1.37970  1.1746  
+## Number of obs: 192, groups:  Geno:Rep, 96; Rep, 4
+## 
+## Fixed effects:
+##               Estimate Std. Error t value
+## (Intercept)  5.875e+00  4.212e-01  13.949
+## Geno2       -7.500e-01  5.873e-01  -1.277
+## Geno3       -2.500e-01  5.873e-01  -0.426
+## Geno4        1.477e-14  5.873e-01   0.000
+## Geno5       -7.500e-01  5.873e-01  -1.277
+## Geno6       -5.000e-01  5.873e-01  -0.851
+## Geno7        2.500e-01  5.873e-01   0.426
+## Geno8        1.470e-14  5.873e-01   0.000
+## Geno9       -3.750e-01  5.873e-01  -0.639
+## Geno10      -5.000e-01  5.873e-01  -0.851
+## Geno11      -1.000e+00  5.873e-01  -1.703
+## Geno12       1.000e+00  5.873e-01   1.703
+## Geno13       1.125e+00  5.873e-01   1.916
+## Geno14      -2.500e-01  5.873e-01  -0.426
+## Geno15       3.750e-01  5.873e-01   0.639
+## Geno16       2.500e-01  5.873e-01   0.426
+## Geno17      -1.250e+00  5.873e-01  -2.128
+## Geno18       1.750e+00  5.873e-01   2.980
+## Geno19       1.375e+00  5.873e-01   2.341
+## Geno20       2.625e+00  5.873e-01   4.470
+## Geno21       2.750e+00  5.873e-01   4.682
+## Geno22       2.000e+00  5.873e-01   3.405
+## Geno23       2.000e+00  5.873e-01   3.405
+## Geno24       2.250e+00  5.873e-01   3.831</code></pre>
+<pre><code>## 
+## Correlation matrix not shown by default, as p = 24 &gt; 12.
+## Use print(x, correlation=TRUE)  or
+##     vcov(x)        if you need it</code></pre>
+<pre><code>## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see help(&#39;isSingular&#39;)</code></pre>
+<pre class="r"><code>VarCorr(model)</code></pre>
+<pre><code>##  Groups   Name        Std.Dev.
+##  Geno:Rep (Intercept) 0.00000 
+##  Rep      (Intercept) 0.14031 
+##  Residual             1.17461</code></pre>
+<p>Prdicting the values</p>
+<pre class="r"><code>predicted &lt;- predict(model)
+anova_data$predicted &lt;- predicted</code></pre>
+<p>GCA and SCA Calculation</p>
+<pre class="r"><code>gca &lt;- anova_data %&gt;% 
+  group_by(Geno) %&gt;% 
+  summarise(GCA = mean(predicted))
+sca &lt;- anova_data %&gt;% 
+  group_by()</code></pre>
+<pre class="r"><code>lsm &lt;- lsmeans(model, ~Geno)
+summary(lsm)</code></pre>
+<pre><code>##  Geno lsmean    SE   df lower.CL upper.CL
+##  1      5.88 0.421 70.8     5.04     6.71
+##  2      5.12 0.421 70.8     4.29     5.96
+##  3      5.62 0.421 70.8     4.79     6.46
+##  4      5.88 0.421 70.8     5.04     6.71
+##  5      5.12 0.421 70.8     4.29     5.96
+##  6      5.38 0.421 70.8     4.54     6.21
+##  7      6.12 0.421 70.8     5.29     6.96
+##  8      5.88 0.421 70.8     5.04     6.71
+##  9      5.50 0.421 70.8     4.66     6.34
+##  10     5.38 0.421 70.8     4.54     6.21
+##  11     4.88 0.421 70.8     4.04     5.71
+##  12     6.88 0.421 70.8     6.04     7.71
+##  13     7.00 0.421 70.8     6.16     7.84
+##  14     5.62 0.421 70.8     4.79     6.46
+##  15     6.25 0.421 70.8     5.41     7.09
+##  16     6.12 0.421 70.8     5.29     6.96
+##  17     4.62 0.421 70.8     3.79     5.46
+##  18     7.62 0.421 70.8     6.79     8.46
+##  19     7.25 0.421 70.8     6.41     8.09
+##  20     8.50 0.421 70.8     7.66     9.34
+##  21     8.62 0.421 70.8     7.79     9.46
+##  22     7.88 0.421 70.8     7.04     8.71
+##  23     7.88 0.421 70.8     7.04     8.71
+##  24     8.12 0.421 70.8     7.29     8.96
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95</code></pre>
+<pre class="r"><code>sink(&quot;linextesteroutput.txt&quot;)
+# with(anova_data,lineXtester(Rep, Geno, LN))
+sink()</code></pre>
 </div>
 
 
