@@ -1,7 +1,9 @@
 library(devtools)
 breedR_repo <- "https://famuvie.github.io/breedR/"
 devtools::install_github("famuvie/breedR", repos = breedR_repo)
+devtools::install_github("OnofriAndreaPG/lmDiallel")
 
+library(lmDiallel)
 library(breedR)
 library(ggplot2)
 set.seed(123)
@@ -50,3 +52,20 @@ dat <- transform(dat,
 ## Printing simulated setting
 print(table(dat[, c('male', 'female')]), zero.print = "")
 str(dat)
+
+# ---------------------------------
+df <- read.csv("./data/Low_phosphate_group.csv", header = T)
+str(df)
+df$Geno <- as.factor(df$Geno)
+df$Rep <- as.factor(df$Rep)
+
+
+gcsres <- GCA(df[df$Rep == 1,][,-c(1,2)],df[df$Rep == 2,][,-c(1,2)])
+class(gcsres)
+
+write.table(gcsres, "./data/gcs.txt")
+
+sink("./data/gcs_calc1.txt")
+GCA(df[df$Rep == 1,][,-c(1,2)],df[df$Rep == 2,][,-c(1,2)])
+sink()
+plot(GCA(df[df$Rep == 1,][,-c(1,2)],df[df$Rep == 2,][,-c(1,2)]))
